@@ -57,7 +57,7 @@ class AlgoEvent:
 
         self.model = build_model()
         self.model.compile(
-            loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+            loss=keras.losses.BinaryCrossentropy(from_logits=True),
             optimizer="sgd",
             metrics=["accuracy"],
         )
