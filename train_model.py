@@ -57,7 +57,8 @@ class AlgoEvent:
 
         # get my selected financial instruments
         self.Xname = ["ETXEUR", "FRXEUR", "GRXEUR", "HKXHKD", "NLXEUR", "NSXUSD", "SPXUSD",
-                      "UKXGBP", "US2000USD", "US30USD"]
+                      "UKXGBP", "US2000USD", "US30USD", "BCOUSD", "CORNUSD", "NATGASUSD", 
+                      "SOYBNUSD", "SUGARUSD", "WHEATUSD", "WTIUSD"]
         self.Yname = ["EURUSD"]
 
         input_dim = len(self.Xname)
