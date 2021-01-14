@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-import matplot.plt as plt
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -131,7 +131,7 @@ class AlgoEvent:
                     
                     # Save the model
                     self.model.save(self.evt.path_lib+"lstm_model_1")
-                    
+                    self.evt.consoleLog("successfully saved model")
                     self.isSaved = True
             
         pass
