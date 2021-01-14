@@ -9,7 +9,7 @@ import numpy as np
 
 def build_model():
     batch_size = 128
-    input_dim = 5
+    input_dim = 10
     units = 256
     output_size = 1
     lstm_layer = tf.keras.layers.LSTM(units, input_shape=(None, input_dim))
@@ -23,6 +23,7 @@ def build_model():
     )
     # define a model
     return model
+
 
 def get_dataset(X_train, y_train):
     arr_X = []
@@ -43,44 +44,51 @@ def get_dataset(X_train, y_train):
     arr_Y = arr_Y[time:]
     return arr_X, arr_Y
 
+
 class AlgoEvent:
     def __init__(self):
         self.lasttime = datetime(2000, 1, 1)
         self.isSaved = False
-        self.firstTrain = False
+        self.firstTrain = True
         self.numOfObs = 100
+        self.history = None
         self.dict = {}
         self.arr_Y, self.arr_X = [], []
+
         self.model = build_model()
+        self.model.compile(
+            loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+            optimizer="sgd",
+            metrics=["accuracy"],
+        )
         pass
-        
+
     def start(self, mEvt):
         # get my selected financial instruments
-        self.Xname = ["ETXEUR", "FRXEUR", "GRXEUR", "HKXHKD", "NLXEUR", "NSXUSD", "SPXUSD", "UDXUSD", 
-            "UKXGBP", "US2000USD", "US30USD"]
+        self.Xname = ["ETXEUR", "FRXEUR", "GRXEUR", "HKXHKD", "NLXEUR", "NSXUSD", "SPXUSD",
+                      "UKXGBP", "US2000USD", "US30USD"]
         self.Yname = ["EURUSD"]
-        
-        
+
         self.evt = AlgoAPI_Backtest.AlgoEvtHandler(self, mEvt)
         self.evt.start()
-        
+
     def on_bulkdatafeed(self, isSync, bd, ab):
-        if isSync:  # and not self.isSaved
+        if isSync and not self.isSaved:
             # Get new day price
             if bd[self.Yname[0]]['timestamp'] > self.lasttime + timedelta(hours=24):
                 self.lasttime = bd[self.Yname[0]]['timestamp']
-                
+
                 # Append the observation
                 data = np.zeros(len(self.Xname))
                 for i in range(len(self.Xname)):
                     data[i] = bd[self.Xname[i]]['lastPrice']
                 self.arr_Y.append(bd[self.Yname[0]]['lastPrice'])
                 self.arr_X.append(data)
-                
+
                 if len(self.arr_Y) >= self.numOfObs:
                     # Do the training
                     arr_X, arr_Y = get_dataset(self.arr_X, self.arr_Y)
-                    
+
                     cut_point = len(arr_X)//5*4
                     arr_X_train = np.array(arr_X[:cut_point])
                     arr_Y_train = np.array(arr_Y[:cut_point])
@@ -89,16 +97,19 @@ class AlgoEvent:
 
                     if self.firstTrain:
                         self.firstTrain = False
-                        self.history = self.model.fit(arr_X_train, arr_Y_train, 
-                                validation_data=(arr_X_val, arr_Y_val), batch_size=128,
-                                epochs=30)
-                        self.dict = {"loss" : self.history.history['loss'], "val_loss" : self.history.history['val_loss'], 
-                                    "accuracy" : self.history.history['accuracy'], "val_accuracy" : self.history.history['val_accuracy']}
-                        
+                        self.history = self.model.fit(arr_X_train, arr_Y_train,
+                                                      validation_data=(
+                                                          arr_X_val, arr_Y_val), batch_size=128,
+                                                      epochs=30)
+
+                        self.dict = {"loss": self.history.history['loss'], "val_loss": self.history.history['val_loss'],
+                                     "accuracy": self.history.history['accuracy'], "val_accuracy": self.history.history['val_accuracy']}
+
                     else:
-                        self.history = self.model.fit(arr_X_train, arr_Y_train, 
-                                validation_data=(arr_X_val, arr_Y_val), batch_size=128, 
-                                epochs=30, initial_epoch=self.history.epoch[-1])
+                        self.history = self.model.fit(arr_X_train, arr_Y_train,
+                                                      validation_data=(
+                                                          arr_X_val, arr_Y_val), batch_size=128,
+                                                      epochs=30, initial_epoch=self.history.epoch[-1])
                         self.dict['loss'] += self.history.history['loss']
                         self.dict['val_loss'] += self.history.history['val_loss']
                         self.dict['accuracy'] += self.history.history['accuracy']
@@ -128,12 +139,12 @@ class AlgoEvent:
                     plt.xlabel('epoch')
 
                     plt.savefig(self.evt.path_img + "a.png")
-                    
+
                     # Save the model
                     self.model.save(self.evt.path_lib+"lstm_model_1")
                     self.evt.consoleLog("successfully saved model")
                     self.isSaved = True
-            
+
         pass
 
     def on_marketdatafeed(self, md, ab):
@@ -144,10 +155,10 @@ class AlgoEvent:
 
     def on_weatherdatafeed(self, wd):
         pass
-    
+
     def on_econsdatafeed(self, ed):
         pass
-        
+
     def on_orderfeed(self, of):
         pass
 
