@@ -1,3 +1,4 @@
+
 from AlgoAPI import AlgoAPIUtil, AlgoAPI_Backtest
 from datetime import datetime, timedelta
 import tensorflow as tf
@@ -7,9 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def build_model():
+def build_model(input_dim):
     batch_size = 128
-    input_dim = 10
     units = 256
     output_size = 1
     lstm_layer = tf.keras.layers.LSTM(units, input_shape=(None, input_dim))
@@ -28,7 +28,7 @@ def build_model():
 def get_dataset(X_train, y_train):
     arr_X = []
     arr_Y = y_train.copy()
-    time = 1
+    time = 3
     for i in range(len(X_train)):
         if i > 0:
             if y_train[i] > y_train[i-1]:
@@ -55,19 +55,23 @@ class AlgoEvent:
         self.dict = {}
         self.arr_Y, self.arr_X = [], []
 
-        self.model = build_model()
-        self.model.compile(
-            loss=keras.losses.BinaryCrossentropy(from_logits=True),
-            optimizer="sgd",
-            metrics=["accuracy"],
-        )
-        pass
-
-    def start(self, mEvt):
         # get my selected financial instruments
         self.Xname = ["ETXEUR", "FRXEUR", "GRXEUR", "HKXHKD", "NLXEUR", "NSXUSD", "SPXUSD",
                       "UKXGBP", "US2000USD", "US30USD"]
         self.Yname = ["EURUSD"]
+
+        input_dim = len(self.Xname)
+
+        self.model = build_model(input_dim)
+        self.model.compile(
+            loss=keras.losses.BinaryCrossentropy(from_logits=True),
+            optimizer="adam",
+            metrics=["accuracy"],
+        )
+
+        pass
+
+    def start(self, mEvt):
 
         self.evt = AlgoAPI_Backtest.AlgoEvtHandler(self, mEvt)
         self.evt.start()
@@ -143,6 +147,8 @@ class AlgoEvent:
                     # Save the model
                     self.model.save(self.evt.path_lib+"lstm_model_1")
                     self.evt.consoleLog("successfully saved model")
+                    self.evt.consoleLog(
+                        "val_acc, train_acc = ", val_acc[-1], acc[-1])
                     self.isSaved = True
 
         pass
