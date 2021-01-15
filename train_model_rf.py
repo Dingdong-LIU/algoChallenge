@@ -11,7 +11,6 @@ import pandas as pd
 import numpy as np
 
 
-
 def get_dataset(X_train, y_train, names):
     arr_X = X_train.copy()
     arr_Y = y_train.copy()
@@ -26,14 +25,14 @@ class AlgoEvent:
         self.lasttime = datetime(2000, 1, 1)
         self.isSaved = False
         self.firstTrain = True
-        self.numOfObs = 450
+        self.numOfObs = 200
         self.history = None
         self.dict = {}
         self.arr_Y, self.arr_X = [], []
 
         # get my selected financial instruments
         self.Xname = ["ETXEUR", "FRXEUR", "GRXEUR", "HKXHKD", "NLXEUR", "NSXUSD", "SPXUSD",
-                      "UKXGBP", "US2000USD", "US30USD", "BCOUSD", "CORNUSD", "NATGASUSD", 
+                      "UKXGBP", "US2000USD", "US30USD", "BCOUSD", "CORNUSD", "NATGASUSD",
                       "SOYBNUSD", "SUGARUSD", "WHEATUSD", "WTIUSD"]
         self.Yname = ["EURUSD"]
         self.params = {'n_estimators': 1200,
@@ -51,7 +50,7 @@ class AlgoEvent:
         self.evt.start()
 
     def on_bulkdatafeed(self, isSync, bd, ab):
-        if isSync and not self.isSaved:
+        if isSync:  # and not self.isSaved
             # Get new day price
             if bd[self.Yname[0]]['timestamp'] > self.lasttime + timedelta(hours=24):
                 self.lasttime = bd[self.Yname[0]]['timestamp']
@@ -70,26 +69,27 @@ class AlgoEvent:
                     params = self.params
                     names = self.Xname
 
-                    arr_X, arr_Y = get_dataset(self.arr_X, self.arr_Y, self.Xname)
-                    
+                    arr_X, arr_Y = get_dataset(
+                        self.arr_X, self.arr_Y, self.Xname)
+
                     # split dataset for train and validation
                     X_train, X_test, y_train, y_test = train_test_split(
                         arr_X, arr_Y, test_size=len(arr_X)//5, random_state=13)
 
                     reg = ensemble.GradientBoostingRegressor(**(self.params))
 
-
                     reg.fit(X_train, y_train)
 
                     mse = mean_squared_error(y_test, reg.predict(X_test))
-                    self.evt.consoleLog("The mean squared error (MSE) on test set: {:.4f}".format(mse))
+                    self.evt.consoleLog(
+                        "The mean squared error (MSE) on test set: {:.4f}".format(mse))
                     r2 = r2_score(y_test, reg.predict(X_test))
-                    self.evt.consoleLog("The R2 score on the test set is: {:.6f}".format(r2))
+                    self.evt.consoleLog(
+                        "The R2 score on the test set is: {:.6f}".format(r2))
 
                     # plot the image
                     test_score = np.zeros(
                         (params['n_estimators'],), dtype=np.float64)
-
 
                     for i, y_pred in enumerate(reg.staged_predict(X_test)):
                         test_score[i] = reg.loss_(y_test, y_pred)
@@ -98,9 +98,9 @@ class AlgoEvent:
                     plt.subplot(1, 1, 1)
                     plt.title('Deviance')
                     plt.plot(np.arange(params['n_estimators']) + 1, reg.train_score_, 'b-',
-                            label='Training Set Deviance')
+                             label='Training Set Deviance')
                     plt.plot(np.arange(params['n_estimators']) + 1, test_score, 'r-',
-                            label='Test Set Deviance')
+                             label='Test Set Deviance')
                     plt.legend(loc='upper right')
                     plt.xlabel('Boosting Iterations')
                     plt.ylabel('Deviance')
@@ -115,7 +115,8 @@ class AlgoEvent:
                     pos = np.arange(sorted_idx.shape[0]) + .5
                     fig = plt.figure(figsize=(12, 6))
                     plt.subplot(1, 2, 1)
-                    plt.barh(pos, feature_importance[sorted_idx], align='center')
+                    plt.barh(
+                        pos, feature_importance[sorted_idx], align='center')
                     plt.yticks(pos, np.array(names)[sorted_idx])
                     plt.title('Feature Importance (MDI)')
 
@@ -128,7 +129,12 @@ class AlgoEvent:
                     plt.title("Permutation Importance (test set)")
                     fig.tight_layout()
                     plt.savefig(self.evt.path_img + "b.png")
-                    
+
+                    # Report number of instances
+                    self.evt.consoleLog(
+                        "The number of instances used: {}".format(self.numOfObs))
+                    self.numOfObs += 50
+
                     # Save the model
                     self.isSaved = True
 
