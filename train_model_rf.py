@@ -1,4 +1,3 @@
-
 from AlgoAPI import AlgoAPIUtil, AlgoAPI_Backtest
 from datetime import datetime, timedelta
 from sklearn import datasets, ensemble
@@ -14,22 +13,10 @@ import numpy as np
 
 
 def get_dataset(X_train, y_train, names):
-    arr_X = []
+    arr_X = X_train.copy()
     arr_Y = y_train.copy()
-    time = 1
-    for i in range(len(X_train)):
-        if i > 0:
-            if y_train[i] > y_train[i-1]:
-                arr_Y[i] = 1
-            else:
-                arr_Y[i] = 0
-        x = np.zeros((time, (X_train[0].shape)[0]))
-        if i >= time-1:
-            for j in range(time):
-                x[j] = X_train[j+i-6]
-            arr_X.append(x)
     arr_X.pop(0)
-    arr_Y = arr_Y[time:]
+    arr_Y = arr_Y[:-1]
     arr_X = pd.DataFrame(arr_X, columns=names)
     return arr_X, arr_Y
 
@@ -39,7 +26,7 @@ class AlgoEvent:
         self.lasttime = datetime(2000, 1, 1)
         self.isSaved = False
         self.firstTrain = True
-        self.numOfObs = 100
+        self.numOfObs = 450
         self.history = None
         self.dict = {}
         self.arr_Y, self.arr_X = [], []
