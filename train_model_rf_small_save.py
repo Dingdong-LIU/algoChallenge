@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from joblib import dump, load
 
 
 def get_dataset(X_train, y_train, names):
@@ -25,7 +26,7 @@ class AlgoEvent:
         self.lasttime = datetime(2000, 1, 1)
         self.isSaved = False
         self.firstTrain = True
-        self.numOfObs = 400
+        self.numOfObs = 650
         self.history = None
         self.dict = {}
         self.arr_Y, self.arr_X = [], []
@@ -138,6 +139,7 @@ class AlgoEvent:
                     self.numOfObs += 50
 
                     # Save the model
+                    dump(reg, self.evt.path_lib+'rf_small.joblib')
                     self.isSaved = True
 
         pass
