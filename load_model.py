@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from joblib import dump, load
 import numpy as np
+import pandas as pd
 
 
 class AlgoEvent:
@@ -45,49 +46,56 @@ class AlgoEvent:
         if isSync:  # and not self.isSaved
             # Get new day price
             if bd[self.Yname[0]]['timestamp'] >= self.lasttradetime + timedelta(hours=24):
-                self.lasttradetime = bd[self.myinstrument]['timestamp']
 
-                if not self.stated:
-                    self.lasttime = bd[self.Yname[0]]['timestamp']
+                self.lasttradetime = bd[self.Yname[0]]['timestamp']
 
-                    # Append the observation
-                    data = np.zeros(len(self.Xname))
-                    for i in range(len(self.Xname)):
-                        data[i] = bd[self.Xname[i]]['lastPrice']
-                    self.arr_Y = (bd[self.Yname[0]]['lastPrice'])
-                    self.arr_X = (data)
+                # Append the observation
+                data = np.zeros(len(self.Xname))
 
-                    # Predict lastprice for the next three days
-                    self.one_day = self.one_day_model.predict(self.arr_X)
-                    self.two_day = self.two_day_model.predict(self.arr_X)
-                    self.three_day = self.three_day_model.predict(self.arr_X)
+                for i in range(len(self.Xname)):
+                    data[i] = bd[self.Xname[i]]['lastPrice']
+                self.arr_Y = (bd[self.Yname[0]]['lastPrice'])
+                self.arr_X = pd.DataFrame([data], columns=self.Xname)
 
-                else:
-                    # Update date and value
-                    self.today = self.one_day
-                    self.one_day = self.one_day_model.predict(self.arr_X)
-                    self.two_day = self.two_day_model.predict(self.arr_X)
-                    self.three_day = self.three_day_model.predict(self.arr_X)
+                if np.isnan(self.arr_Y) > 0:
+                    if not self.stated:
+                        # Predict lastprice for the next three days
+                        self.one_day = self.one_day_model.predict(self.arr_X)
+                        self.two_day = self.two_day_model.predict(self.arr_X)
+                        self.three_day = self.three_day_model.predict(
+                            self.arr_X)
+                        self.stated = True
 
-                lastprice = self.arr_Y
+                    else:
+                        # Update date and value
+                        self.today = self.one_day
+                        self.one_day = self.one_day_model.predict(self.arr_X)
+                        self.two_day = self.two_day_model.predict(self.arr_X)
+                        self.three_day = self.three_day_model.predict(
+                            self.arr_X)
+
+                    lastprice = self.arr_Y
 
                 if not np.isnan(self.today) and not np.isnan(self.arr_Y):
                     # Decide on whether to trade # Currently use one day data
                     ideal_position_size = 1 / \
                         np.abs(self.today - self.arr_Y + 1e-6) * \
                         self.risk_ratio
-                    ideal_position_size = np.max(ideal_position_size, 0.9)
+                    ideal_position_size = np.maximum(ideal_position_size, 0.9)
                     if not np.isnan(ideal_position_size) and ideal_position_size > 0:
                         if self.arr_Y > self.one_day:
                             # buy in ideal position size or buy all
                             self.test_sendOrder(
-                                ideal_position_size, lastprice, 1, 'open')
+                                ideal_position_size, self.arr_Y, 1, 'open')
                             pass
                         else:
                             # sell ideal position size or sell all
                             self.test_sendOrder(
-                                ideal_position_size, lastprice, -1, 'open')
+                                ideal_position_size, self.arr_Y, -1, 'open')
                             pass
+
+                self.arr_X = None
+                self.arr_Y = None
 
     def on_marketdatafeed(self, md, ab):
         pass
