@@ -31,11 +31,11 @@ class AlgoEvent:
         self.arr_Y, self.arr_X = [], []
 
         # get my selected financial instruments
-        self.Xname = ["ETXEUR", "FRXEUR", "GRXEUR", "HKXHKD", "NLXEUR", "NSXUSD",
-                      "SPXUSD", "UKXGBP", "US2000USD", "US30USD", "BCOUSD", "CORNUSD",
+        self.Xname = ["ETXEUR", "FRXEUR", "GRXEUR", "HKXHKD", "NSXUSD",
+                      "SPXUSD", "US2000USD", "US30USD", "CORNUSD",
                       "NATGASUSD", "SOYBNUSD", "SUGARUSD", "WHEATUSD", "WTIUSD", "XAGAUD",
-                      "XAGUSD", "XAGEUR", "XAUEUR", "XAUUSD", "XCUUSD", "XPTUSD", "XPDUSD",
-                      "XAGHKD", "XAGJPY", "XAUXAG"]
+                      "XAGEUR", "XAUEUR", "XAUUSD", "XCUUSD", "XPTUSD", "XPDUSD",
+                      "XAGHKD", "XAUXAG"]
         self.Yname = ["EURUSD"]
         self.params = {'n_estimators': 1200,
                        'max_depth': 3,
