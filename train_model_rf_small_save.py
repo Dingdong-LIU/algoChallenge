@@ -55,7 +55,7 @@ class AlgoEvent:
     def on_bulkdatafeed(self, isSync, bd, ab):
         if isSync:  # and not self.isSaved
             # Get new day price
-            if bd[self.Yname[0]]['timestamp'] > self.lasttime + timedelta(hours=24):
+            if bd[self.Yname[0]]['timestamp'] >= self.lasttime + timedelta(hours=24):
                 self.lasttime = bd[self.Yname[0]]['timestamp']
 
                 # Append the observation
