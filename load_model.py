@@ -24,6 +24,7 @@ class AlgoEvent:
         self.stated = False
         self.risk_ratio = 0.01
         self.lasttradetime = datetime(2000, 1, 1)
+        self.volumn = 0.0
 
         pass
 
@@ -54,7 +55,7 @@ class AlgoEvent:
 
                 for i in range(len(self.Xname)):
                     data[i] = bd[self.Xname[i]]['lastPrice']
-                self.arr_Y = (bd[self.Yname[0]]['lastPrice'])
+                self.arr_Y = bd[self.Yname[0]]['lastPrice']
                 self.arr_X = pd.DataFrame([data], columns=self.Xname)
 
                 if np.isnan(self.arr_Y) > 0:
@@ -81,17 +82,16 @@ class AlgoEvent:
                     ideal_position_size = 1 / \
                         np.abs(self.today - self.arr_Y + 1e-6) * \
                         self.risk_ratio
-                    ideal_position_size = np.maximum(ideal_position_size, 0.9)
+                    self.volumn = np.maximum(ideal_position_size, 0.9)
+                    lastprice = self.arr_Y
                     if not np.isnan(ideal_position_size) and ideal_position_size > 0:
                         if self.arr_Y > self.one_day:
                             # buy in ideal position size or buy all
-                            self.test_sendOrder(
-                                ideal_position_size, self.arr_Y, 1, 'open')
+                            self.test_sendOrder(lastprice, 1, 'open')
                             pass
                         else:
                             # sell ideal position size or sell all
-                            self.test_sendOrder(
-                                ideal_position_size, self.arr_Y, -1, 'open')
+                            self.test_sendOrder(lastprice, -1, 'open')
                             pass
 
                 self.arr_X = None
@@ -118,9 +118,9 @@ class AlgoEvent:
     def on_openPositionfeed(self, op, oo, uo):
         pass
 
-    def test_sendOrder(self, volume, lastprice, buysell, openclose):
+    def test_sendOrder(self, lastprice, buysell, openclose):
         orderObj = AlgoAPIUtil.OrderObject()
-        orderObj.instrument = self.Yname
+        orderObj.instrument = self.Yname[0]
         orderObj.orderRef = 1
         if buysell == 1:
             orderObj.takeProfitLevel = lastprice*1.1
@@ -128,7 +128,7 @@ class AlgoEvent:
         elif buysell == -1:
             orderObj.takeProfitLevel = lastprice*0.9
             orderObj.stopLossLevel = lastprice*1.1
-        orderObj.volume = volume
+        orderObj.volume = 0.01  # self.volumn
         orderObj.openclose = openclose
         orderObj.buysell = buysell
         orderObj.ordertype = 0  # 0=market_order, 1=limit_order
