@@ -18,13 +18,14 @@ class AlgoEvent:
         self.arr_X = None
         self.arr_Y = None
         self.today = 0
-        self.one_day = 0
-        self.two_day = 0
-        self.three_day = 0
+        self.one_day = -10
+        self.two_day = -10
+        self.three_day = -10
         self.stated = False
         self.risk_ratio = 0.01
         self.lasttradetime = datetime(2000, 1, 1)
         self.volumn = 0.0
+        self.trend = False # false is keep decreasing, true is keep increasing
 
         pass
 
@@ -58,14 +59,14 @@ class AlgoEvent:
                 self.arr_Y = bd[self.Yname[0]]['lastPrice']
                 self.arr_X = pd.DataFrame([data], columns=self.Xname)
 
-                if np.isnan(self.arr_Y) > 0:
+                if not np.isnan(self.arr_Y):
                     if not self.stated:
                         # Predict lastprice for the next three days
                         self.one_day = self.one_day_model.predict(self.arr_X)
                         self.two_day = self.two_day_model.predict(self.arr_X)
                         self.three_day = self.three_day_model.predict(
                             self.arr_X)
-                        self.stated = True
+                        
 
                     else:
                         # Update date and value
@@ -77,7 +78,11 @@ class AlgoEvent:
 
                     lastprice = self.arr_Y
 
-                if not np.isnan(self.today) and not np.isnan(self.arr_Y):
+                # problem: start  with a minimum or a maximum
+                if self.stated == False:
+                    self.stated = True      # Do not allow trading in the first day
+                    pass
+                elif not np.isnan(self.today) and not np.isnan(self.arr_Y):
                     # Decide on whether to trade # Currently use one day data
                     ideal_position_size = 1 / \
                         np.abs(self.today - self.arr_Y + 1e-6) * \
@@ -85,14 +90,16 @@ class AlgoEvent:
                     self.volumn = np.maximum(ideal_position_size, 0.9)
                     lastprice = self.arr_Y
                     if not np.isnan(ideal_position_size) and ideal_position_size > 0:
-                        if self.arr_Y > self.one_day:
+                        self.evt.consoleLog("self.one_day = {}, self.arr_Y = {}".format(self.one_day, self.arr_Y))
+                        if self.one_day > self.arr_Y and not self.trend:
                             # buy in ideal position size or buy all
                             self.test_sendOrder(lastprice, 1, 'open')
                             pass
-                        else:
+                        elif self.one_day < self.arr_Y and self.trend:
                             # sell ideal position size or sell all
                             self.test_sendOrder(lastprice, -1, 'open')
                             pass
+                        self.trend = self.one_day > self.arr_Y
 
                 self.arr_X = None
                 self.arr_Y = None
@@ -128,7 +135,7 @@ class AlgoEvent:
         elif buysell == -1:
             orderObj.takeProfitLevel = lastprice*0.9
             orderObj.stopLossLevel = lastprice*1.1
-        orderObj.volume = 0.01  # self.volumn
+        orderObj.volume = 0.01  # float(self.volumn)
         orderObj.openclose = openclose
         orderObj.buysell = buysell
         orderObj.ordertype = 0  # 0=market_order, 1=limit_order
