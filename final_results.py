@@ -25,7 +25,7 @@ class AlgoEvent:
         self.risk_ratio = 0.01
         self.lasttradetime = datetime(2000, 1, 1)
         self.volumn = 0.0
-        self.trend = False # false is keep decreasing, true is keep increasing
+        self.trend = False  # false is keep decreasing, true is keep increasing
 
         pass
 
@@ -39,9 +39,9 @@ class AlgoEvent:
                       "XAUXAG"]
         self.Yname = ["EURUSD"]
         self.one_day_model = load(self.evt.path_lib+'rf_small_one_day.joblib')
-        self.two_day_model = load(self.evt.path_lib+'rf_small_two_day.joblib')
-        self.three_day_model = load(
-            self.evt.path_lib+'rf_small_three_day.joblib')
+        # self.two_day_model = load(self.evt.path_lib+'rf_small_two_day.joblib')
+        # self.three_day_model = load(
+        #     self.evt.path_lib+'rf_small_three_day.joblib')
         self.evt.start()
 
     def on_bulkdatafeed(self, isSync, bd, ab):
@@ -63,18 +63,17 @@ class AlgoEvent:
                     if not self.stated:
                         # Predict lastprice for the next three days
                         self.one_day = self.one_day_model.predict(self.arr_X)
-                        self.two_day = self.two_day_model.predict(self.arr_X)
-                        self.three_day = self.three_day_model.predict(
-                            self.arr_X)
-                        
+                        # self.two_day = self.two_day_model.predict(self.arr_X)
+                        # self.three_day = self.three_day_model.predict(
+                        #     self.arr_X)
 
                     else:
                         # Update date and value
                         self.today = self.one_day
                         self.one_day = self.one_day_model.predict(self.arr_X)
-                        self.two_day = self.two_day_model.predict(self.arr_X)
-                        self.three_day = self.three_day_model.predict(
-                            self.arr_X)
+                        # self.two_day = self.two_day_model.predict(self.arr_X)
+                        # self.three_day = self.three_day_model.predict(
+                        #     self.arr_X)
 
                     lastprice = self.arr_Y
 
@@ -87,10 +86,11 @@ class AlgoEvent:
                     ideal_position_size = 1 / \
                         np.abs(self.today - self.arr_Y + 1e-6) * \
                         self.risk_ratio
-                    # self.volumn = np.maximum(ideal_position_size, 0.01)
+                    self.volumn = np.maximum(ideal_position_size, 0)
                     lastprice = self.arr_Y
                     if not np.isnan(ideal_position_size) and ideal_position_size > 0:
-                        self.evt.consoleLog("self.one_day = {}, self.arr_Y = {}".format(self.one_day, self.arr_Y))
+                        self.evt.consoleLog(
+                            "self.one_day = {}, self.arr_Y = {}".format(self.one_day, self.arr_Y))
                         if self.one_day > self.arr_Y and not self.trend:
                             # buy in ideal position size or buy all
                             self.test_sendOrder(lastprice, 1, 'open')
@@ -135,7 +135,7 @@ class AlgoEvent:
         # elif buysell == -1:
         #     orderObj.takeProfitLevel = lastprice*0.9
         #     orderObj.stopLossLevel = lastprice*1.1
-        orderObj.volume = 0.01  # float(self.volumn)
+        orderObj.volume = float(self.volumn)
         orderObj.openclose = openclose
         orderObj.buysell = buysell
         orderObj.ordertype = 0  # 0=market_order, 1=limit_order
